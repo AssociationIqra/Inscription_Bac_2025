@@ -3,7 +3,7 @@ const scriptURL = 'https://script.google.com/macros/s/AKfycbwZnbAbC4wv-nTgT1zGLP
 // 🧠 تحميل المستخدمين من localStorage
 let users = JSON.parse(localStorage.getItem('users') || '[]');
 
-// ✅ تسجيل مستخدم جديد (باستخدام اسم المستخدم)
+// ✅ تسجيل مستخدم جديد
 document.getElementById('btnRegister')?.addEventListener('click', () => {
   let username = document.getElementById('regUsername')?.value.trim();
   let pass = document.getElementById('regPass')?.value.trim();
@@ -24,7 +24,7 @@ document.getElementById('btnRegister')?.addEventListener('click', () => {
   if (msg) msg.innerText = '✅ تم التسجيل! يمكنك تسجيل الدخول الآن.';
 });
 
-// ✅ تسجيل الدخول (باستخدام اسم المستخدم)
+// ✅ تسجيل الدخول
 document.getElementById('btnLogin')?.addEventListener('click', () => {
   let username = document.getElementById('loginUser')?.value.trim();
   let pass = document.getElementById('loginPass')?.value.trim();
@@ -40,12 +40,12 @@ document.getElementById('btnLogin')?.addEventListener('click', () => {
   }
 });
 
-// ✅ منع الوصول المباشر للوحة التحكم دون تسجيل دخول
+// ✅ منع الوصول للوحة التحكم مباشرة
 if (location.pathname.endsWith('dashboard.html')) {
   if (!localStorage.getItem('loggedIn')) location.href = 'index.html';
 }
 
-// ✅ ربط الحقول بالترجمة العربية (مطلوب لـ Google Sheet)
+// ✅ ترجمة الحقول
 const fieldMap = {
   fname: "الاسم",
   lname: "اللقب",
@@ -83,24 +83,34 @@ function fill(obj) {
   }
 }
 
+// ✅ النسخة المعدلة لدالة postToSheet (تعالج CORS وتعيد JSON)
 function postToSheet(payload, action) {
   return fetch(`${scriptURL}?action=${action}`, {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(payload)
-  }).then(r => r.text());
+  })
+  .then(res => res.json())
+  .catch(err => ({ error: "⚠️ حدث خطأ في الاتصال: " + err.message }));
 }
 
-// ✅ أوامر لوحة التحكم (dashboard.html)
+// ✅ لوحة التحكم
 if (location.pathname.endsWith('dashboard.html')) {
   const statusMsg = document.getElementById('statusMsg');
 
   document.getElementById('addStud')?.addEventListener('click', () => {
-    postToSheet(gather(), 'add').then(txt => statusMsg.innerText = txt);
+    postToSheet(gather(), 'add').then(res => {
+      statusMsg.innerText = res.message || res.error || "رد غير متوقع.";
+    });
   });
 
   document.getElementById('delStud')?.addEventListener('click', () => {
     let regNo = prompt('أدخل رقم التسجيل للحذف');
-    postToSheet({ "رقم التسجيل": regNo }, 'delete').then(txt => statusMsg.innerText = txt);
+    postToSheet({ "رقم التسجيل": regNo }, 'delete').then(res => {
+      statusMsg.innerText = res.message || res.error || "رد غير متوقع.";
+    });
   });
 
   document.getElementById('clearForm')?.addEventListener('click', () => {
@@ -114,24 +124,19 @@ if (location.pathname.endsWith('dashboard.html')) {
 
   document.getElementById('getStud')?.addEventListener('click', () => {
     let no = prompt('أدخل رقم التسجيل');
-    postToSheet({ "رقم التسجيل": no }, 'get').then(txt => {
-      try {
-        let obj = JSON.parse(txt);
-        if (obj.error) {
-          statusMsg.innerText = obj.error;
-        } else {
-          fill(obj);
-          statusMsg.innerText = 'تم جلب البيانات';
-        }
-      } catch (e) {
-        statusMsg.innerText = "⚠️ خطأ في البيانات المستلمة: " + txt;
+    postToSheet({ "رقم التسجيل": no }, 'get').then(obj => {
+      if (obj.error) {
+        statusMsg.innerText = obj.error;
+      } else {
+        fill(obj);
+        statusMsg.innerText = 'تم جلب البيانات';
       }
     });
   });
 
   document.getElementById('editStud')?.addEventListener('click', () => {
-    postToSheet(gather(), 'edit').then(txt => statusMsg.innerText = txt);
+    postToSheet(gather(), 'edit').then(res => {
+      statusMsg.innerText = res.message || res.error || "رد غير متوقع.";
+    });
   });
 }
-
-
