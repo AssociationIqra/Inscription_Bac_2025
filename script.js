@@ -83,9 +83,9 @@ function fill(obj) {
   }
 }
 
-// ✅ إرسال البيانات إلى Google Apps Script
+// ✅ النسخة المعدلة لدالة postToSheet (تعالج CORS وتعيد JSON)
 function postToSheet(payload, action) {
-  return fetch(`${scriptURL}?action=${action}`, {
+  return fetch(${scriptURL}?action=${action}, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -96,35 +96,20 @@ function postToSheet(payload, action) {
   .catch(err => ({ error: "⚠️ حدث خطأ في الاتصال: " + err.message }));
 }
 
-// ✅ عرض رسالة حالة بشكل واضح ومؤقت
-function showStatusMessage(message, isError = false) {
-  const el = document.getElementById('statusMsg');
-  if (!el) return;
-  el.innerText = message;
-  el.style.color = isError ? 'red' : 'green';
-  el.style.fontWeight = 'bold';
-  el.style.display = 'block';
-
-  setTimeout(() => {
-    el.innerText = '';
-    el.style.display = 'none';
-  }, 4000);
-}
-
 // ✅ لوحة التحكم
 if (location.pathname.endsWith('dashboard.html')) {
   const statusMsg = document.getElementById('statusMsg');
 
   document.getElementById('addStud')?.addEventListener('click', () => {
     postToSheet(gather(), 'add').then(res => {
-      showStatusMessage(res.message || res.error || "رد غير متوقع.", !!res.error);
+      statusMsg.innerText = res.message || res.error || "رد غير متوقع.";
     });
   });
 
   document.getElementById('delStud')?.addEventListener('click', () => {
     let regNo = prompt('أدخل رقم التسجيل للحذف');
     postToSheet({ "رقم التسجيل": regNo }, 'delete').then(res => {
-      showStatusMessage(res.message || res.error || "رد غير متوقع.", !!res.error);
+      statusMsg.innerText = res.message || res.error || "رد غير متوقع.";
     });
   });
 
@@ -134,24 +119,21 @@ if (location.pathname.endsWith('dashboard.html')) {
         document.getElementById(id).value = '';
       }
     });
-    showStatusMessage('✅ تم تفريغ الحقول');
+    statusMsg.innerText = 'تم التفريغ';
   });
 
   document.getElementById('getStud')?.addEventListener('click', () => {
     let no = prompt('أدخل رقم التسجيل');
     postToSheet({ "رقم التسجيل": no }, 'get').then(obj => {
       if (obj.error) {
-        showStatusMessage(obj.error, true);
+        statusMsg.innerText = obj.error;
       } else {
         fill(obj);
-        showStatusMessage('✅ تم جلب البيانات');
+        statusMsg.innerText = 'تم جلب البيانات';
       }
     });
   });
 
   document.getElementById('editStud')?.addEventListener('click', () => {
     postToSheet(gather(), 'edit').then(res => {
-      showStatusMessage(res.message || res.error || "رد غير متوقع.", !!res.error);
-    });
-  });
-}
+      statusMsg.innerText =
