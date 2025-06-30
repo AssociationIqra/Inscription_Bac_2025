@@ -1,5 +1,5 @@
-const scriptURL = 'https://script.google.com/macros/s/AKfycbxiR7JcBMJC9_A8u6S51Hp1y7niF8lR-lXbcVkJUUcbul5cRcugPXFwDxAsCigdBTL4/exec';
-// 🧠 تحميل المستخدمين من localStorage
+const scriptURL = 'https://script.google.com/macros/s/AKfycbwZnbAbC4wv-nTgT1zGLPjvbtF0POh2lKMok1gCARvPFQFTwzu98Fmyc2_webV95Hsxhg/exec';
+
 // 🧠 تحميل المستخدمين من localStorage
 let users = JSON.parse(localStorage.getItem('users') || '[]');
 
@@ -85,7 +85,7 @@ function fill(obj) {
 
 // ✅ النسخة المعدلة لدالة postToSheet (تعالج CORS وتعيد JSON)
 function postToSheet(payload, action) {
-  return fetch(${scriptURL}?action=${action}, {
+  return fetch(`${scriptURL}?action=${action}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -136,7 +136,7 @@ if (location.pathname.endsWith('dashboard.html')) {
 
   document.getElementById('editStud')?.addEventListener('click', () => {
     postToSheet(gather(), 'edit').then(res => {
-      showStatusMessage(res.message || res.error || "رد غير متوقع.", !!res.error);
+      statusMsg.innerText = res.message || res.error || "رد غير متوقع.";
     });
   });
 }
