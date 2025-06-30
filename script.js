@@ -1,5 +1,5 @@
 const scriptURL = 'https://script.google.com/macros/s/AKfycbxiR7JcBMJC9_A8u6S51Hp1y7niF8lR-lXbcVkJUUcbul5cRcugPXFwDxAsCigdBTL4/exec';
-
+// 🧠 تحميل المستخدمين من localStorage
 // 🧠 تحميل المستخدمين من localStorage
 let users = JSON.parse(localStorage.getItem('users') || '[]');
 
@@ -136,4 +136,7 @@ if (location.pathname.endsWith('dashboard.html')) {
 
   document.getElementById('editStud')?.addEventListener('click', () => {
     postToSheet(gather(), 'edit').then(res => {
-      statusMsg.innerText =
+      showStatusMessage(res.message || res.error || "رد غير متوقع.", !!res.error);
+    });
+  });
+}
