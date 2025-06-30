@@ -85,16 +85,21 @@ function fill(obj) {
 
 // ✅ النسخة المعدلة لدالة postToSheet (تعالج CORS وتعيد JSON)
 function postToSheet(payload, action) {
-  return fetch(`${scriptURL}?action=${action}`, {
+  const formData = new URLSearchParams();
+  formData.append("action", action);
+  formData.append("data", JSON.stringify(payload));
+
+  return fetch(scriptURL, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/x-www-form-urlencoded'
     },
-    body: JSON.stringify(payload)
+    body: formData.toString()
   })
   .then(res => res.json())
   .catch(err => ({ error: "⚠️ حدث خطأ في الاتصال: " + err.message }));
 }
+
 
 // ✅ لوحة التحكم
 if (location.pathname.endsWith('dashboard.html')) {
