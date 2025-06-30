@@ -1,4 +1,4 @@
-const scriptURL = 'https://script.google.com/macros/s/AKfycbwZnbAbC4wv-nTgT1zGLPjvbtF0POh2lKMok1gCARvPFQFTwzu98Fmyc2_webV95Hsxhg/exec';
+const scriptURL = 'https://script.google.com/macros/s/AKfycbxiR7JcBMJC9_A8u6S51Hp1y7niF8lR-lXbcVkJUUcbul5cRcugPXFwDxAsCigdBTL4/exec';
 
 // 🧠 تحميل المستخدمين من localStorage
 let users = JSON.parse(localStorage.getItem('users') || '[]');
