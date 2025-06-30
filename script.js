@@ -1,4 +1,4 @@
-const scriptURL = 'https://script.google.com/macros/s/AKfycbxiR7JcBMJC9_A8u6S51Hp1y7niF8lR-lXbcVkJUUcbul5cRcugPXFwDxAsCigdBTL4/exec';
+const scriptURL = 'https://script.google.com/macros/s/AKfycbwZnbAbC4wv-nTgT1zGLPjvbtF0POh2lKMok1gCARvPFQFTwzu98Fmyc2_webV95Hsxhg/exec';
 
 // 🧠 تحميل المستخدمين من localStorage
 let users = JSON.parse(localStorage.getItem('users') || '[]');
@@ -83,7 +83,7 @@ function fill(obj) {
   }
 }
 
-// ✅ النسخة المعدلة لدالة postToSheet (تعالج CORS وتعيد JSON)
+// ✅ تجنب CORS باستخدام x-www-form-urlencoded
 function postToSheet(payload, action) {
   const formData = new URLSearchParams();
   formData.append("action", action);
@@ -100,21 +100,29 @@ function postToSheet(payload, action) {
   .catch(err => ({ error: "⚠️ حدث خطأ في الاتصال: " + err.message }));
 }
 
-
 // ✅ لوحة التحكم
 if (location.pathname.endsWith('dashboard.html')) {
   const statusMsg = document.getElementById('statusMsg');
 
+  function showMsg(txt, time = 3000) {
+    statusMsg.innerText = txt;
+    statusMsg.style.opacity = 1;
+    setTimeout(() => {
+      statusMsg.style.opacity = 0;
+    }, time);
+  }
+
   document.getElementById('addStud')?.addEventListener('click', () => {
     postToSheet(gather(), 'add').then(res => {
-      statusMsg.innerText = res.message || res.error || "رد غير متوقع.";
+      showMsg(res.message || res.error || "رد غير متوقع.");
     });
   });
 
   document.getElementById('delStud')?.addEventListener('click', () => {
     let regNo = prompt('أدخل رقم التسجيل للحذف');
+    if (!regNo) return;
     postToSheet({ "رقم التسجيل": regNo }, 'delete').then(res => {
-      statusMsg.innerText = res.message || res.error || "رد غير متوقع.";
+      showMsg(res.message || res.error || "رد غير متوقع.");
     });
   });
 
@@ -124,24 +132,25 @@ if (location.pathname.endsWith('dashboard.html')) {
         document.getElementById(id).value = '';
       }
     });
-    statusMsg.innerText = 'تم التفريغ';
+    showMsg('🧹 تم تفريغ البيانات');
   });
 
   document.getElementById('getStud')?.addEventListener('click', () => {
     let no = prompt('أدخل رقم التسجيل');
+    if (!no) return;
     postToSheet({ "رقم التسجيل": no }, 'get').then(obj => {
       if (obj.error) {
-        statusMsg.innerText = obj.error;
+        showMsg(obj.error);
       } else {
         fill(obj);
-        statusMsg.innerText = 'تم جلب البيانات';
+        showMsg('📥 تم جلب البيانات');
       }
     });
   });
 
   document.getElementById('editStud')?.addEventListener('click', () => {
     postToSheet(gather(), 'edit').then(res => {
-      statusMsg.innerText = res.message || res.error || "رد غير متوقع.";
+      showMsg(res.message || res.error || "رد غير متوقع.");
     });
   });
 }
