@@ -83,21 +83,28 @@ function fill(obj) {
   }
 }
 
-// ✅ تجنب CORS باستخدام x-www-form-urlencoded
-function postToSheet(payload, action) {
-  const formData = new URLSearchParams();
-  formData.append("action", action);
-  formData.append("data", JSON.stringify(payload));
-
-  return fetch(scriptURL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: formData.toString()
-  })
-  .then(res => res.json())
-  .catch(err => ({ error: "⚠️ حدث خطأ في الاتصال: " + err.message }));
+// ✅ حل CORS باستخدام JSONP للقراءة و Proxy للكتابة
+async function postToSheet(payload, action) {
+  try {
+    // حل بديل باستخدام Proxy إذا استمرت مشكلة CORS
+    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+    const response = await fetch(proxyUrl + scriptURL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: `action=${action}&data=${encodeURIComponent(JSON.stringify(payload))}`
+    });
+    
+    if (!response.ok) throw new Error('Network response was not ok');
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error:', error);
+    return { error: "⚠️ حدث خطأ في الاتصال: " + error.message };
+  }
 }
 
 // ✅ لوحة التحكم
@@ -105,6 +112,7 @@ if (location.pathname.endsWith('dashboard.html')) {
   const statusMsg = document.getElementById('statusMsg');
 
   function showMsg(txt, time = 3000) {
+    if (!statusMsg) return;
     statusMsg.innerText = txt;
     statusMsg.style.opacity = 1;
     setTimeout(() => {
@@ -112,18 +120,16 @@ if (location.pathname.endsWith('dashboard.html')) {
     }, time);
   }
 
-  document.getElementById('addStud')?.addEventListener('click', () => {
-    postToSheet(gather(), 'add').then(res => {
-      showMsg(res.message || res.error || "رد غير متوقع.");
-    });
+  document.getElementById('addStud')?.addEventListener('click', async () => {
+    const res = await postToSheet(gather(), 'add');
+    showMsg(res.message || res.error || "رد غير متوقع.");
   });
 
-  document.getElementById('delStud')?.addEventListener('click', () => {
+  document.getElementById('delStud')?.addEventListener('click', async () => {
     let regNo = prompt('أدخل رقم التسجيل للحذف');
     if (!regNo) return;
-    postToSheet({ "رقم التسجيل": regNo }, 'delete').then(res => {
-      showMsg(res.message || res.error || "رد غير متوقع.");
-    });
+    const res = await postToSheet({ "رقم التسجيل": regNo }, 'delete');
+    showMsg(res.message || res.error || "رد غير متوقع.");
   });
 
   document.getElementById('clearForm')?.addEventListener('click', () => {
@@ -135,22 +141,20 @@ if (location.pathname.endsWith('dashboard.html')) {
     showMsg('🧹 تم تفريغ البيانات');
   });
 
-  document.getElementById('getStud')?.addEventListener('click', () => {
+  document.getElementById('getStud')?.addEventListener('click', async () => {
     let no = prompt('أدخل رقم التسجيل');
     if (!no) return;
-    postToSheet({ "رقم التسجيل": no }, 'get').then(obj => {
-      if (obj.error) {
-        showMsg(obj.error);
-      } else {
-        fill(obj);
-        showMsg('📥 تم جلب البيانات');
-      }
-    });
+    const obj = await postToSheet({ "رقم التسجيل": no }, 'get');
+    if (obj.error) {
+      showMsg(obj.error);
+    } else {
+      fill(obj);
+      showMsg('📥 تم جلب البيانات');
+    }
   });
 
-  document.getElementById('editStud')?.addEventListener('click', () => {
-    postToSheet(gather(), 'edit').then(res => {
-      showMsg(res.message || res.error || "رد غير متوقع.");
-    });
+  document.getElementById('editStud')?.addEventListener('click', async () => {
+    const res = await postToSheet(gather(), 'edit');
+    showMsg(res.message || res.error || "رد غير متوقع.");
   });
 }
