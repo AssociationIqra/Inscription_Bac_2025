@@ -85,28 +85,30 @@ function fill(obj) {
 
 // ✅ حل CORS باستخدام JSONP للقراءة و Proxy للكتابة
 async function postToSheet(payload, action) {
+  const url = 'https://script.google.com/macros/s/AKfycbzqeuzeKTdwnJd2f6O__SrrnOuEGCLwsR-zUKnhXVYQKzxn1xd4kpU-MhxN3fAc5-S3lw/exec';
+  
   try {
-    // حل بديل باستخدام Proxy إذا استمرت مشكلة CORS
-    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-    const response = await fetch(proxyUrl + scriptURL, {
+    // استخدم FormData بدلاً من JSON مباشرة
+    const formData = new FormData();
+    formData.append('action', action);
+    formData.append('data', JSON.stringify(payload));
+    
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: `action=${action}&data=${encodeURIComponent(JSON.stringify(payload))}`
+      body: formData,
+      // لا تضيف رؤوس Content-Type يدوياً
+      // دع المتصفح يعتني بها تلقائياً
     });
     
     if (!response.ok) throw new Error('Network response was not ok');
     
-    const result = await response.json();
-    return result;
+    const result = await response.text();
+    return JSON.parse(result);
   } catch (error) {
     console.error('Error:', error);
-    return { error: "⚠️ حدث خطأ في الاتصال: " + error.message };
+    return {status: "error", message: "فشل في الاتصال بالسيرفر"};
   }
 }
-
 // ✅ لوحة التحكم
 if (location.pathname.endsWith('dashboard.html')) {
   const statusMsg = document.getElementById('statusMsg');
