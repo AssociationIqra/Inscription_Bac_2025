@@ -1,162 +1,103 @@
-const scriptURL = 'https://script.google.com/macros/s/AKfycbzqeuzeKTdwnJd2f6O__SrrnOuEGCLwsR-zUKnhXVYQKzxn1xd4kpU-MhxN3fAc5-S3lw/exec';
+// رابط Google Apps Script الذي نشرته كـ Web App (استبدل بالرابط الخاص بك إن تغيّر)
+const scriptURL = "https://script.google.com/macros/s/AKfycbzqeuzeKTdwnJd2f6O__SrrnOuEGCLwsR-zUKnhXVYQKzxn1xd4kpU-MhxN3fAc5-S3lw/exec";
 
-// 🧠 تحميل المستخدمين من localStorage
-let users = JSON.parse(localStorage.getItem('users') || '[]');
+// تأكد من تنفيذ الكود بعد تحميل الصفحة
+window.onload = function () {
+  const form = document.getElementById("studForm");
+  const msg = document.getElementById("statusMsg");
 
-// ✅ تسجيل مستخدم جديد
-document.getElementById('btnRegister')?.addEventListener('click', () => {
-  let username = document.getElementById('regUsername')?.value.trim();
-  let pass = document.getElementById('regPass')?.value.trim();
-  const msg = document.getElementById('regMsg');
-
-  if (!username || !pass) {
-    if (msg) msg.innerText = 'يرجى إدخال اسم المستخدم وكلمة المرور.';
-    return;
+  // ربط الأزرار بالدوال
+  if (document.getElementById("addStud")) {
+    document.getElementById("addStud").onclick = () => handleSubmit("add");
+    document.getElementById("getStud").onclick = () => handleSubmit("get");
+    document.getElementById("delStud").onclick = () => handleSubmit("delete");
+    document.getElementById("editStud").onclick = () => handleSubmit("edit");
+    document.getElementById("clearForm").onclick = clearForm;
   }
 
-  if (users.find(u => u.username === username)) {
-    if (msg) msg.innerText = '⚠️ اسم المستخدم موجود مسبقًا.';
-    return;
+  // دالة إرسال البيانات إلى Google Apps Script حسب العملية
+  function handleSubmit(action) {
+    const data = {
+      action: action,
+      regNo: get("regNo"),
+      lname: get("lname"),
+      fname: get("fname"),
+      dob: get("dob"),
+      grade: get("grade"),
+      stream: get("stream"),
+      regPass: get("regPassStud"),
+      phase1: get("phase1"),
+      phase2: get("phase2"),
+      pedDate: get("pedDate"),
+      socDate: get("socDate"),
+      wish: get("wish"),
+      major: get("major"),
+      state: get("state"),
+      payNotes: get("payNotes")
+    };
+
+    fetch(scriptURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    })
+      .then(res => res.text())
+      .then(text => {
+        if (action === "get") {
+          if (text === "NOT_FOUND") {
+            msg.textContent = "الطالب غير موجود.";
+          } else {
+            const result = JSON.parse(text);
+            set("regNo", result["رقم التسجيل"]);
+            set("lname", result["اللقب"]);
+            set("fname", result["الاسم"]);
+            set("dob", result["تاريخ الميلاد"]);
+            set("grade", result["المعدل"]);
+            set("stream", result["الشعبة"]);
+            set("regPassStud", result["الرقم السري"]);
+            set("phase1", result["مرحلة التسجيل الأولي"]);
+            set("phase2", result["مرحلة تأكيد التسجيل"]);
+            set("pedDate", result["تاريخ التسجيل البيداغوجي"]);
+            set("socDate", result["تاريخ تسجيل الخدمات الجامعية"]);
+            set("wish", result["الرغبة"]);
+            set("major", result["التخصص"]);
+            set("state", result["الولاية"]);
+            set("payNotes", result["حالة الدفع"]);
+            msg.textContent = "تم جلب بيانات الطالب.";
+          }
+        } else if (text === "EXISTS") {
+          msg.textContent = "الطالب مسجل مسبقًا.";
+        } else if (text === "ADDED") {
+          msg.textContent = "تمت إضافة الطالب.";
+          clearForm();
+        } else if (text === "UPDATED") {
+          msg.textContent = "تم تعديل بيانات الطالب.";
+        } else if (text === "DELETED") {
+          msg.textContent = "تم حذف الطالب.";
+          clearForm();
+        } else if (text.startsWith("ERROR")) {
+          msg.textContent = "خطأ: " + text;
+        } else {
+          msg.textContent = text;
+        }
+      })
+      .catch(err => {
+        msg.textContent = "فشل الاتصال بالخادم: " + err;
+        console.error(err);
+      });
   }
 
-  users.push({ username, password: pass });
-  localStorage.setItem('users', JSON.stringify(users));
-  if (msg) msg.innerText = '✅ تم التسجيل! يمكنك تسجيل الدخول الآن.';
-});
-
-// ✅ تسجيل الدخول
-document.getElementById('btnLogin')?.addEventListener('click', () => {
-  let username = document.getElementById('loginUser')?.value.trim();
-  let pass = document.getElementById('loginPass')?.value.trim();
-  const msg = document.getElementById('loginMsg');
-
-  const match = users.find(u => u.username === username && u.password === pass);
-
-  if (match) {
-    localStorage.setItem('loggedIn', 'true');
-    location.href = 'dashboard.html';
-  } else {
-    if (msg) msg.innerText = '❌ اسم المستخدم أو كلمة المرور غير صحيحة.';
+  // أدوات مساعدة
+  function get(id) {
+    return document.getElementById(id).value.trim();
   }
-});
 
-// ✅ منع الوصول للوحة التحكم مباشرة
-if (location.pathname.endsWith('dashboard.html')) {
-  if (!localStorage.getItem('loggedIn')) location.href = 'index.html';
-}
+  function set(id, value) {
+    document.getElementById(id).value = value || "";
+  }
 
-// ✅ ترجمة الحقول
-const fieldMap = {
-  fname: "الاسم",
-  lname: "اللقب",
-  dob: "تاريخ الميلاد",
-  regNo: "رقم التسجيل",
-  regPassStud: "الرقم السري",
-  stream: "الشعبة",
-  phase1: "مرحلة التسجيل الأولي",
-  phase2: "مرحلة تأكيد التسجيل",
-  pedDate: "تاريخ التسجيل البيداغوجي",
-  socDate: "تاريخ تسجيل الخدمات الجامعية",
-  wish: "الرغبة",
-  major: "التخصص",
-  state: "الولاية",
-  payNotes: "حالة الدفع",
-  grade: "المعدل"
+  function clearForm() {
+    form.reset();
+    msg.textContent = "";
+  }
 };
-
-const formEls = Object.keys(fieldMap);
-
-function gather() {
-  let o = {};
-  formEls.forEach(id => {
-    const arabicKey = fieldMap[id];
-    o[arabicKey] = document.getElementById(id)?.value || '';
-  });
-  return o;
-}
-
-function fill(obj) {
-  for (const [engKey, arabicKey] of Object.entries(fieldMap)) {
-    if (document.getElementById(engKey)) {
-      document.getElementById(engKey).value = obj[arabicKey] || "";
-    }
-  }
-}
-
-// ✅ حل CORS باستخدام JSONP للقراءة و Proxy للكتابة
-async function postToSheet(payload, action) {
-  const url = 'https://script.google.com/macros/s/AKfycbzqeuzeKTdwnJd2f6O__SrrnOuEGCLwsR-zUKnhXVYQKzxn1xd4kpU-MhxN3fAc5-S3lw/exec';
-  
-  try {
-    // استخدم FormData بدلاً من JSON مباشرة
-    const formData = new FormData();
-    formData.append('action', action);
-    formData.append('data', JSON.stringify(payload));
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      body: formData,
-      // لا تضيف رؤوس Content-Type يدوياً
-      // دع المتصفح يعتني بها تلقائياً
-    });
-    
-    if (!response.ok) throw new Error('Network response was not ok');
-    
-    const result = await response.text();
-    return JSON.parse(result);
-  } catch (error) {
-    console.error('Error:', error);
-    return {status: "error", message: "فشل في الاتصال بالسيرفر"};
-  }
-}
-// ✅ لوحة التحكم
-if (location.pathname.endsWith('dashboard.html')) {
-  const statusMsg = document.getElementById('statusMsg');
-
-  function showMsg(txt, time = 3000) {
-    if (!statusMsg) return;
-    statusMsg.innerText = txt;
-    statusMsg.style.opacity = 1;
-    setTimeout(() => {
-      statusMsg.style.opacity = 0;
-    }, time);
-  }
-
-  document.getElementById('addStud')?.addEventListener('click', async () => {
-    const res = await postToSheet(gather(), 'add');
-    showMsg(res.message || res.error || "رد غير متوقع.");
-  });
-
-  document.getElementById('delStud')?.addEventListener('click', async () => {
-    let regNo = prompt('أدخل رقم التسجيل للحذف');
-    if (!regNo) return;
-    const res = await postToSheet({ "رقم التسجيل": regNo }, 'delete');
-    showMsg(res.message || res.error || "رد غير متوقع.");
-  });
-
-  document.getElementById('clearForm')?.addEventListener('click', () => {
-    formEls.forEach(id => {
-      if (document.getElementById(id)) {
-        document.getElementById(id).value = '';
-      }
-    });
-    showMsg('🧹 تم تفريغ البيانات');
-  });
-
-  document.getElementById('getStud')?.addEventListener('click', async () => {
-    let no = prompt('أدخل رقم التسجيل');
-    if (!no) return;
-    const obj = await postToSheet({ "رقم التسجيل": no }, 'get');
-    if (obj.error) {
-      showMsg(obj.error);
-    } else {
-      fill(obj);
-      showMsg('📥 تم جلب البيانات');
-    }
-  });
-
-  document.getElementById('editStud')?.addEventListener('click', async () => {
-    const res = await postToSheet(gather(), 'edit');
-    showMsg(res.message || res.error || "رد غير متوقع.");
-  });
-}
